@@ -1,0 +1,16 @@
+{
+  "name": "cg-build",
+  "version-string": "0.1.0",
+  "dependencies": [
+    "freeglut",
+    "glm",
+    {
+      "name": "imgui",
+      "features": [
+        "glut-binding",
+        "opengl2-binding"
+      ]
+    }
+  ],
+  "builtin-baseline": "0f00916d00a6301c39a22fc9ec09319629326fcd"
+}
