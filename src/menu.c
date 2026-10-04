@@ -1,35 +1,62 @@
-#include "menu.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <GL/freeglut.h>
 
-#define MENU_HELLO 1
-#define MENU_QUIT  2
+#include"menu.h"
+#include"pen.h"
 
-// 使用者選取項目時，GLUT 會呼叫這個函式
-static void menu_callback(int choice)
-{
+Brush_e brush = BRUSH_DOT;
+Shape_e shape = SHAPE_NONE;
+
+static void parent_callback(int value) {
+    if (value == -1) {
+        exit(0);
+    } 
+}
+
+static void brush_callback(int choice) {
     switch (choice)
     {
-        case MENU_HELLO:
-            printf("Hello from menu!\n");
+        case BRUSH_DOT:
+            fprintf(stdout, "menu 'brush' is being tap");
             break;
-
-        case MENU_QUIT:
-            exit(EXIT_SUCCESS);
+        case BRUSH_SQUARE:
+            fprintf(stdout, "menu 'shape' is being tap");
+            break;
+        // case MENU_QUIT:
+        //     fprintf(stdout, "normal quit\n");
+        //     exit(0);
+        //     break;
     }
 }
 
-// 在 main.c 建立視窗後呼叫一次
+static void shape_callback(int choice) {
+    switch(choice) {
+        case SHAPE_NONE:
+            break;
+        case SHAPE_LINE:
+            break;
+        case SHAPE_MISUMI:
+            break;
+    }
+}
+
 void menu_init(void)
 {
-    glutCreateMenu(menu_callback);
+    int brush_menu = glutCreateMenu(brush_callback);
+    glutAddMenuEntry("Dot", BRUSH_DOT);
+    glutAddMenuEntry("Square", BRUSH_SQUARE);
 
-    // 第一個參數是顯示文字，第二個是傳給 callback 的值
-    glutAddMenuEntry("Hello", MENU_HELLO);
-    glutAddMenuEntry("Quit", MENU_QUIT);
+    int shape_menu = glutCreateMenu(shape_callback);
+    glutAddMenuEntry("None", SHAPE_NONE);
+    glutAddMenuEntry("Line", SHAPE_LINE);
+    glutAddMenuEntry("Triangle", SHAPE_MISUMI);
 
-    // 把選單附加到目前視窗的滑鼠右鍵
+    int main_menu = glutCreateMenu(parent_callback);
+    glutAddSubMenu("Brush", brush_menu);
+    glutAddSubMenu("Shape", shape_menu);
+    glutAddMenuEntry("Quit", -1);
+
+
     glutAttachMenu(GLUT_RIGHT_BUTTON);
 }
