@@ -110,7 +110,7 @@ int main(int argc, char** argv) {
 
     glutCreateWindow("hw1");
 
-    menu_init();
+    menu_init(draw_cancel_input);
     draw_init();
 
     init_window();

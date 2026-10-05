@@ -6,11 +6,22 @@
 #include"draw.h"
 #include"pen.h"
 
+typedef struct {
+    int x, y;
+    float size;
+    color_e color;
+    Brush_e brush;
+} Point;
+
+static Point *points;
+static size_t point_count, point_capacity;
+
 
 typedef struct {
     int x1, y1;
     int x2, y2;
     float width;
+    color_e color;
 } Line;
 
 typedef struct {
@@ -22,6 +33,7 @@ typedef struct {
 typedef struct {
     int x, y;
     float radius;
+    color_e color;
 } Circle;
 
 typedef struct {
@@ -53,6 +65,7 @@ static void ds_init() {
         sizeof *circles +
         _size * sizeof circles->meta[0]
     );
+    if (!circles) { fprintf(stderr, "Out of memory\n"); exit(EXIT_FAILURE); }
     circles->count = 0;
     circles->capacity = _size;
 
@@ -60,6 +73,7 @@ static void ds_init() {
         sizeof *lines +
         _size * sizeof lines->meta[0]
     );
+    if (!lines) { fprintf(stderr, "Out of memory\n"); exit(EXIT_FAILURE); }
     lines->count = 0;
     lines->capacity = _size;
 
@@ -67,8 +81,12 @@ static void ds_init() {
         sizeof *curve +
         _size * sizeof curve->meta[0]
     );
+    if (!curve) { fprintf(stderr, "Out of memory\n"); exit(EXIT_FAILURE); }
     curve->count = 0;
     curve->capacity = _size;
+    point_capacity = _size;
+    points = malloc(point_capacity * sizeof *points);
+    if (!points) { fprintf(stderr, "Out of memory\n"); exit(EXIT_FAILURE); }
 }
 
 
@@ -78,9 +96,46 @@ void draw_polygon() {
     
 }
 
+static void apply_color(color_e color) {
+    static const GLfloat colors[][3] = {
+        {1, 0, 0}, {0, 0, 1}, {0, 1, 0},
+        {1, 1, 0}, {1, 1, 1}, {0, 0, 0}
+    };
+    glColor3fv(colors[color]);
+}
+
+static void draw_points(void) {
+    for (size_t i = 0; i < point_count; ++i) {
+        const Point *p = &points[i];
+        apply_color(p->color);
+        float r = p->size * 0.5f;
+        float cx = (float)p->x, cy = (float)(height - p->y);
+        if (p->brush == BRUSH_SQUARE) {
+            glBegin(GL_QUADS);
+            glVertex2f(cx-r, cy-r); glVertex2f(cx+r, cy-r);
+            glVertex2f(cx+r, cy+r); glVertex2f(cx-r, cy+r);
+            glEnd();
+        } else {
+            glBegin(GL_TRIANGLE_FAN);
+            glVertex2f(cx, cy);
+            for (int j = 0; j <= 32; ++j) {
+                float a = j * 6.283185307f / 32;
+                glVertex2f(cx + r*cosf(a), cy + r*sinf(a));
+            }
+            glEnd();
+        }
+    }
+}
+
+void draw_cancel_input(void) {
+    freehand = 0;
+    pending = 0;
+}
+
 static void draw_line() {
     for (size_t i=0; i < lines->count; ++i) {
         Line *tmp = &lines->meta[i];
+        apply_color(tmp->color);
         glLineWidth(tmp->width);
 
         glBegin(GL_LINES);
@@ -93,6 +148,7 @@ static void draw_line() {
 static void draw_curve() {
     for (size_t i=0; i < curve->count; ++i) {
         Line *tmp = &curve->meta[i];
+        apply_color(tmp->color);
         glLineWidth(tmp->width);
 
         glBegin(GL_LINES);
@@ -113,6 +169,7 @@ static void draw_circle() {
 
 
     for (size_t i=0; i < circles->count; ++i) {
+        apply_color(circles->meta[i].color);
         glPushMatrix();
         glTranslatef(
             circles->meta[i].x,
@@ -142,7 +199,13 @@ int draw_mouse(int button, int state, int x, int y) {
 
     switch (shape) {
     case SHAPE_NONE:
-        if (brush == BRUSH_DOT) {
+        if (brush == BRUSH_DOT || brush == BRUSH_SQUARE) {
+            if (point_count >= point_capacity) {
+                fprintf(stderr, "points reached capacity\n");
+                break;
+            }
+            points[point_count++] = (Point){x, y, pnt_size, pnt_color, brush};
+            glutPostRedisplay();
             pending = 0;
             freehand = 1;
             last_x = x;
@@ -163,7 +226,7 @@ int draw_mouse(int button, int state, int x, int y) {
             lines->meta[lines->count] = (Line){
                 pos_x, pos_y,
                 x, y,
-                pnt_size
+                line_width, pnt_color
             };
             lines->count++;
             pending = !pending;
@@ -179,7 +242,7 @@ int draw_mouse(int button, int state, int x, int y) {
             break;
         }
         circles->meta[circles->count] = (Circle){
-            x, y, 15.0
+            x, y, 15.0, pnt_color
         };
         circles->count++;
         glutPostRedisplay();
@@ -192,7 +255,7 @@ int draw_mouse(int button, int state, int x, int y) {
 int draw_motion(int x, int y) {
     if (!freehand ||
         shape != SHAPE_NONE ||
-        brush != BRUSH_DOT
+        (brush != BRUSH_DOT && brush != BRUSH_SQUARE)
     )  {
         return 0;
     }
@@ -208,7 +271,7 @@ int draw_motion(int x, int y) {
     }
 
     curve->meta[curve->count] = (Line){
-        last_x, last_y, x, y, pnt_size
+        last_x, last_y, x, y, line_width, pnt_color
     };
     curve->count++; 
     last_x = x;
@@ -222,6 +285,7 @@ void draw_render() {
     draw_line();
     draw_circle();
     draw_curve();
+    draw_points();
 }
 
 void draw_init(){

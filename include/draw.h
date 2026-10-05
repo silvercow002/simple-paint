@@ -2,6 +2,7 @@
 #define DRAW_H
 
 void draw_init(void);
+void draw_cancel_input(void);
 int draw_motion(int x, int y);
 int draw_mouse(int button, int state, int x, int y);
 void draw_render();

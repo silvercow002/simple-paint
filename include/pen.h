@@ -19,10 +19,15 @@ extern Shape_e shape;
 typedef enum{
     red,
     blue,
+    green,
+    yellow,
+    white,
+    black,
 } color_e;
 extern color_e pnt_color;
 
 extern float pnt_size;
+extern float line_width;
 
 
 
