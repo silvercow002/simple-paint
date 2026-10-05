@@ -1,0 +1,121 @@
+name: Build and release
+
+on:
+  push:
+    branches: ['**']
+    tags: ['**']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build ${{ matrix.platform }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-2022
+            platform: windows-x64
+          - os: ubuntu-24.04
+            platform: linux-x64
+          - os: macos-14
+            platform: macos-arm64
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Checkout pinned vcpkg
+        if: runner.os == 'Windows'
+        uses: actions/checkout@v6
+        with:
+          repository: microsoft/vcpkg
+          ref: 0f00916d00a6301c39a22fc9ec09319629326fcd
+          path: .vcpkg
+          persist-credentials: false
+
+      - name: Configure Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          & .\.vcpkg\bootstrap-vcpkg.bat -disableMetrics
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $env:VCPKG_ROOT = Join-Path $PWD '.vcpkg'
+          cmake --preset windows-release
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build pkg-config freeglut3-dev libgl1-mesa-dev libglu1-mesa-dev
+
+      - name: Install macOS dependencies
+        if: runner.os == 'macOS'
+        run: |
+          brew install ninja pkgconf freeglut mesa mesa-glu
+          echo "PKG_CONFIG_PATH=$(brew --prefix freeglut)/lib/pkgconfig:$(brew --prefix mesa)/lib/pkgconfig:$(brew --prefix mesa-glu)/lib/pkgconfig" >> "$GITHUB_ENV"
+
+      - name: Configure Unix
+        if: runner.os != 'Windows'
+        run: cmake --preset unix-release
+
+      - name: Build Windows
+        if: runner.os == 'Windows'
+        run: cmake --build --preset windows-release --parallel
+
+      - name: Build Unix
+        if: runner.os != 'Windows'
+        run: cmake --build --preset unix-release --parallel
+
+      - name: Package Windows
+        if: runner.os == 'Windows'
+        run: cpack --config build/windows-release/CPackConfig.cmake -C Release -B dist -D CPACK_PACKAGE_FILE_NAME=CG-windows-x64
+
+      - name: Package Unix
+        if: runner.os != 'Windows'
+        run: cpack --config build/unix-release/CPackConfig.cmake -C Release -B dist -D CPACK_PACKAGE_FILE_NAME=CG-${{ matrix.platform }}
+
+      - name: Upload build packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: CG-${{ matrix.platform }}
+          path: |
+            dist/*.zip
+            dist/*.tar.gz
+          if-no-files-found: error
+          retention-days: 14
+
+  release:
+    name: Publish tagged release
+    needs: build
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v5
+        with:
+          pattern: CG-*
+          path: release-assets
+          merge-multiple: true
+
+      - name: Create checksums and publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        shell: bash
+        run: |
+          cd release-assets
+          sha256sum ./*.zip ./*.tar.gz > SHA256SUMS.txt
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" ./*.zip ./*.tar.gz SHA256SUMS.txt --clobber
+          else
+            gh release create "$RELEASE_TAG" ./*.zip ./*.tar.gz SHA256SUMS.txt \
+              --verify-tag --generate-notes --title "$RELEASE_TAG"
+          fi

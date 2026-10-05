@@ -1,58 +1,26 @@
 {
   "version": 3,
-  "cmakeMinimumRequired": {
-    "major": 3,
-    "minor": 21,
-    "patch": 0
-  },
+  "cmakeMinimumRequired": {"major": 3, "minor": 21, "patch": 0},
   "configurePresets": [
     {
-      "name": "windows-msvc-ninja",
-      "displayName": "MSVC x64 + Ninja + vcpkg (Debug)",
-      "description": "Visual Studio 2022 MSVC v143, Windows x64, Debug",
-      "generator": "Ninja",
+      "name": "windows-release",
+      "generator": "Visual Studio 17 2022",
+      "architecture": "x64",
       "binaryDir": "${sourceDir}/build/${presetName}",
-      "architecture": {
-        "value": "x64",
-        "strategy": "external"
-      },
-      "toolset": {
-        "value": "v143,host=x64",
-        "strategy": "external"
-      },
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_C_COMPILER": "cl",
-        "CMAKE_CXX_COMPILER": "cl",
-        "CMAKE_EXPORT_COMPILE_COMMANDS": true,
-        "CMAKE_TOOLCHAIN_FILE": {
-          "type": "FILEPATH",
-          "value": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
-        },
-        "VCPKG_TARGET_TRIPLET": "x64-windows",
-        "CMAKE_MAKE_PROGRAM": "C:/dev/Ninja/ninja.exe"
-      },
-      "environment": {
-        "VCPKG_ROOT": "C:/dev/vcpkg"
+        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+        "VCPKG_TARGET_TRIPLET": "x64-windows"
       }
     },
     {
-      "name": "windows-msvc-ninja-release",
-      "displayName": "MSVC x64 + Ninja + vcpkg (Release)",
-      "inherits": "windows-msvc-ninja",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release"
-      }
+      "name": "unix-release",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {"CMAKE_BUILD_TYPE": "Release"}
     }
   ],
   "buildPresets": [
-    {
-      "name": "windows-msvc-ninja",
-      "configurePreset": "windows-msvc-ninja"
-    },
-    {
-      "name": "windows-msvc-ninja-release",
-      "configurePreset": "windows-msvc-ninja-release"
-    }
+    {"name": "windows-release", "configurePreset": "windows-release", "configuration": "Release"},
+    {"name": "unix-release", "configurePreset": "unix-release"}
   ]
 }
