@@ -19,10 +19,10 @@ static void brush_callback(int choice) {
     switch (choice)
     {
         case BRUSH_DOT:
-            fprintf(stderr, "menu 'brush' is being tap");
+            fprintf(stderr, "menu 'brush' is being tap\n");
             break;
         case BRUSH_SQUARE:
-            fprintf(stderr, "menu 'shape' is being tap");
+            fprintf(stderr, "menu 'shape' is being tap\n");
             break;
     }
 }
