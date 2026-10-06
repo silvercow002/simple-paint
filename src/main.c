@@ -8,8 +8,23 @@
 // TODO:
 //  change this parameter to argv
 int width, height;
+int cur_time, last_time, fps_counter;
+float fps;
 
-void init_window(void)
+static void FPS() {
+    fps_counter++;
+    cur_time = glutGet(GLUT_ELAPSED_TIME);
+    int interval = cur_time - last_time;
+    if (interval >= 500) {
+        fps = fps_counter * 500 / interval;
+        last_time = cur_time;
+        fps_counter = 0;
+        fprintf(stderr, "FPS: %.1f\n", fps);
+    }
+}
+
+
+static void init_window(void)
 {
     // set matrix
     glMatrixMode(GL_PROJECTION);
@@ -45,6 +60,18 @@ static void display(void) {
     glClear(GL_COLOR_BUFFER_BIT);
 
     draw_render();
+
+    FPS();
+    char fps_str[32];
+    sprintf(fps_str, "FPS:%.1f", fps);
+    glColor3f(1.0f, 1.0f, 1.0f);
+    // right-up
+    draw_string(
+        (float)width - glutBitmapLength(GLUT_BITMAP_HELVETICA_18, (const unsigned char*)fps_str),
+        (float)height - glutBitmapHeight(GLUT_BITMAP_HELVETICA_18),
+        fps_str
+    );
+
 
     glutSwapBuffers();
     fprintf(stderr, "\n");
@@ -123,7 +150,6 @@ int main(int argc, char** argv) {
     glutMotionFunc(motion_handler);
 
 
-
-
+    last_time = glutGet(GLUT_ELAPSED_TIME);
     glutMainLoop();
 }

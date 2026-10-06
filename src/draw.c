@@ -89,7 +89,13 @@ static void ds_init() {
     if (!points) { fprintf(stderr, "Out of memory\n"); exit(EXIT_FAILURE); }
 }
 
-
+void draw_string(float x, float y, const char* str) {
+    glRasterPos2f(x, y);
+    for (const char* i = str; *i != '\0'; i++) {
+        glutBitmapCharacter(GLUT_BITMAP_HELVETICA_12, *i);
+    }
+    
+}
 
 void draw_polygon() {
     int i;
@@ -159,7 +165,7 @@ static void draw_curve() {
 }
 
 static void draw_circle() {
-    fprintf(stderr, "draw_circle() was benn clike");
+    fprintf(stderr, "draw_circle() was benn clike\n");
     static GLUquadric *_circle = NULL;
     
     if (_circle == NULL) {
@@ -220,7 +226,7 @@ int draw_mouse(int button, int state, int x, int y) {
         }
         else {
             if (lines->count >= lines->capacity) {
-                fprintf(stderr, "circles instance is reach the limits");
+                fprintf(stderr, "circles instance is reach the limits\n");
                 break;
             }
             lines->meta[lines->count] = (Line){
@@ -238,7 +244,7 @@ int draw_mouse(int button, int state, int x, int y) {
         break;
     case SHAPE_CIRCLE:
         if (circles->count >= circles->capacity) {
-            fprintf(stderr, "circles instance is reach the limits");
+            fprintf(stderr, "circles instance is reach the limits\n");
             break;
         }
         circles->meta[circles->count] = (Circle){
@@ -266,7 +272,7 @@ int draw_motion(int x, int y) {
 
     if (curve->count >= curve->capacity) {
         freehand = 0;
-        fprintf(stderr, "curve instance is reach the limits");
+        fprintf(stderr, "curve instance is reach the limits\n");
         return 0;
     }
 

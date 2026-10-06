@@ -165,11 +165,11 @@ void menu_init(void (*on_tool_changed)(void))
     point_menu = size_menu(point_size_callback);
 
     main_menu = glutCreateMenu(parent_callback);
+    glutAddSubMenu("Brush", brush_menu);
+    glutAddSubMenu("Shape", shape_menu);
     glutAddSubMenu("Color", color_menu);
     glutAddSubMenu("Line Width", width_menu);
     glutAddSubMenu("Point Size", point_menu);
-    glutAddSubMenu("Brush", brush_menu);
-    glutAddSubMenu("Shape", shape_menu);
     glutAddMenuEntry("Quit", -1);
 
 
