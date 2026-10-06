@@ -80,7 +80,21 @@ jobs:
         if: runner.os != 'Windows'
         run: cpack --config build/unix-release/CPackConfig.cmake -C Release -B dist -D CPACK_PACKAGE_FILE_NAME=CG-${{ matrix.platform }}
 
+      - name: Stage Windows files
+        if: runner.os == 'Windows' && !startsWith(github.ref, 'refs/tags/')
+        run: cmake --install build/windows-release --config Release --prefix dist/windows
+
+      - name: Upload Windows files directly
+        if: runner.os == 'Windows' && !startsWith(github.ref, 'refs/tags/')
+        uses: actions/upload-artifact@v4
+        with:
+          name: CG-windows-x64
+          path: dist/windows/
+          if-no-files-found: error
+          retention-days: 14
+
       - name: Upload build packages
+        if: runner.os != 'Windows' || startsWith(github.ref, 'refs/tags/')
         uses: actions/upload-artifact@v4
         with:
           name: CG-${{ matrix.platform }}
