@@ -5,6 +5,7 @@
 #include"menu.h"
 #include"draw.h"
 #include"canvas_io.h"
+#include"overlay.h"
 
 #include<time.h>
 #ifdef _WIN32
@@ -22,22 +23,6 @@ static void request_save_bmp(void) {
 }
 
 int width, height;
-int cur_time, last_time, fps_counter;
-float fps;
-
-static void FPS() {
-    fps_counter++;
-    cur_time = glutGet(GLUT_ELAPSED_TIME);
-    int interval = cur_time - last_time;
-    if (interval >= 500) {
-        fps = fps_counter * 500 / interval;
-        last_time = cur_time;
-        fps_counter = 0;
-        fprintf(stderr, "FPS: %.1f\n", fps);
-    }
-}
-
-
 static void init_window(void)
 {
     // set matrix
@@ -55,19 +40,15 @@ static void init_window(void)
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    glDrawBuffer(GL_BACK);
     
-    glClearColor(0.0, 0.0, 0.0, 0.0);
+    glDrawBuffer(GL_BACK);
+    glReadBuffer(GL_BACK);
+    // Tightly packed RGB rows for both snapshots and restoration.
+    glPixelStorei(GL_PACK_ALIGNMENT, 1);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 
     glutPostRedisplay();
-}
-
-static void init_func()
-{
-    glReadBuffer(GL_FRONT);
-    glDrawBuffer(GL_BACK);
-    glPixelStorei(GL_PACK_ALIGNMENT, 1);
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1); 
 }
 
 static void display(void) {
@@ -108,17 +89,7 @@ static void display(void) {
         save_bmp_pending = 0;
     }
 
-    FPS();
-    char fps_str[32];
-    sprintf(fps_str, "FPS:%.1f", fps);
-    glColor3f(1.0f, 1.0f, 1.0f);
-    // right-up
-    draw_string(
-        (float)width - glutBitmapLength(GLUT_BITMAP_HELVETICA_18, (const unsigned char*)fps_str),
-        (float)height - glutBitmapHeight(GLUT_BITMAP_HELVETICA_18),
-        fps_str
-    );
-
+    overlay_render(width, height);
 
     glutSwapBuffers();
     fprintf(stderr, "\n");
@@ -130,7 +101,6 @@ static void timer_handler(int value)
     (void)value;
 
     // draw the pic again avoid show FPS
-    glDrawBuffer(GL_BACK);
     glClear(GL_COLOR_BUFFER_BIT);
 
     if (snapshot_ready) {
@@ -162,6 +132,11 @@ static void reshape(int nw, int nh) {
 static void keybord_handler(unsigned char key, int x, int y) {
 
     switch (key) {
+    case 'V':
+    case 'v':
+        overlay_toggle_grid();
+        glutPostRedisplay();
+        break;
     case 'Q':
         exit(0);
         break;
@@ -194,8 +169,8 @@ static void mouse_handler(int button, int state, int x, int y) {
 
 
 int main(int argc, char** argv) {
-    width = 800;
-    height = 800;
+    width = 400;
+    height = 400;
     if (argc >= 3) {
         width = atoi(argv[1]);
         height = atoi(argv[2]);
@@ -211,7 +186,7 @@ int main(int argc, char** argv) {
     // glut init
     glutInit(&argc, argv);
     // performancnce frist, arg from google, i have no idea what it done
-    glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH | GLUT_MULTISAMPLE);
+    glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_MULTISAMPLE);
 
     glutInitWindowSize(width, height);
     // glutInitWindowPosition(100, 50);
@@ -223,7 +198,6 @@ int main(int argc, char** argv) {
     draw_init();
 
     init_window();
-    init_func();
 
     glutDisplayFunc(display);
     glutKeyboardFunc(keybord_handler);
@@ -232,7 +206,7 @@ int main(int argc, char** argv) {
     glutMotionFunc(motion_handler);
 
 
-    last_time = glutGet(GLUT_ELAPSED_TIME);
+    overlay_init();
     glutTimerFunc(1000, timer_handler, 0);
     glutMainLoop();
 }

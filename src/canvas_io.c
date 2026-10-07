@@ -7,24 +7,10 @@
 static unsigned char *pixels;
 static int saved_width, saved_height;
 
-void canvas_capture(int width, int height)
-{
+void canvas_capture(int width, int height) {
     unsigned char *next = malloc((size_t)width * height * 3);
 
-    GLint previous_buffer;
-    glGetIntegerv(GL_READ_BUFFER, &previous_buffer);
-    glPushClientAttrib(GL_CLIENT_PIXEL_STORE_BIT);
-
-    glPixelStorei(GL_PACK_ALIGNMENT, 1);
-    glPixelStorei(GL_PACK_ROW_LENGTH, 0);
-    glPixelStorei(GL_PACK_SKIP_ROWS, 0);
-    glPixelStorei(GL_PACK_SKIP_PIXELS, 0);
-
-    
-    glReadBuffer(GL_BACK);
     glReadPixels(0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, next);
-    glReadBuffer(previous_buffer);
-    glPopClientAttrib();
 
     free(pixels);
     pixels = next;
@@ -32,45 +18,30 @@ void canvas_capture(int width, int height)
     saved_height = height;
 }
 
-void canvas_restore(int width, int height)
-{
-    glPushAttrib(GL_CURRENT_BIT | GL_PIXEL_MODE_BIT | GL_ENABLE_BIT);
-    glPushClientAttrib(GL_CLIENT_PIXEL_STORE_BIT);
-    glDisable(GL_DEPTH_TEST);
-    glDisable(GL_BLEND);
-    glDisable(GL_ALPHA_TEST);
-    glDisable(GL_SCISSOR_TEST);
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-    glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
-    glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
+void canvas_restore(int width, int height) {
+    glPushAttrib(GL_CURRENT_BIT | GL_PIXEL_MODE_BIT);
 
     glPixelZoom((GLfloat)width / saved_width, (GLfloat)height / saved_height);
     glRasterPos2i(0, 0);
     glDrawPixels(saved_width, saved_height, GL_RGB, GL_UNSIGNED_BYTE, pixels);
-    glPopClientAttrib();
     glPopAttrib();
 }
 
-void canvas_free(void)
-{
+void canvas_free(void) {
     free(pixels);
     pixels = NULL;
     saved_width = saved_height = 0;
 }
 
-
 // covent big-endian to little-endian
-static void bmp_u32(unsigned char *dst, uint32_t value)
-{
+static void bmp_u32(unsigned char *dst, uint32_t value) {
     dst[0] = (unsigned char)value;
     dst[1] = (unsigned char)(value >> 8);
     dst[2] = (unsigned char)(value >> 16);
     dst[3] = (unsigned char)(value >> 24);
 }
 
-int canvas_save_bmp(const char *filename)
-{
+int canvas_save_bmp(const char *filename) {
     // 3*3 + 3 del two lb
     // mod 4 = 0
     uint64_t stride64 = ((uint64_t)saved_width * 3 + 3) & ~(uint64_t)3;

@@ -11,7 +11,7 @@ Brush_e brush = BRUSH_DOT;
 Shape_e shape = SHAPE_NONE;
 float pnt_size = 1.0f;
 float line_width = 1.0f;
-color_e pnt_color = white;
+color_e pnt_color = black;
 
 static int brush_menu, shape_menu, color_menu;
 static int width_menu, point_menu, main_menu;

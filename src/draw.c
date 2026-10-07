@@ -250,7 +250,6 @@ int draw_mouse(int button, int state, int x, int y) {
         glutPostRedisplay();
         break;
     }
-    glFinish();
     return 1;
 }
 
