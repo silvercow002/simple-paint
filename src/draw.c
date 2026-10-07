@@ -60,12 +60,11 @@ static void ds_init() {
     pos_x = -1, pos_y = -1;
 
     
-    size_t _size = 1000000;
+    size_t _size = 10000;
     circles = malloc(
         sizeof *circles +
         _size * sizeof circles->meta[0]
     );
-    if (!circles) { fprintf(stderr, "Out of memory\n"); exit(EXIT_FAILURE); }
     circles->count = 0;
     circles->capacity = _size;
 
@@ -73,7 +72,6 @@ static void ds_init() {
         sizeof *lines +
         _size * sizeof lines->meta[0]
     );
-    if (!lines) { fprintf(stderr, "Out of memory\n"); exit(EXIT_FAILURE); }
     lines->count = 0;
     lines->capacity = _size;
 
@@ -81,12 +79,10 @@ static void ds_init() {
         sizeof *curve +
         _size * sizeof curve->meta[0]
     );
-    if (!curve) { fprintf(stderr, "Out of memory\n"); exit(EXIT_FAILURE); }
     curve->count = 0;
     curve->capacity = _size;
     point_capacity = _size;
     points = malloc(point_capacity * sizeof *points);
-    if (!points) { fprintf(stderr, "Out of memory\n"); exit(EXIT_FAILURE); }
 }
 
 void draw_string(float x, float y, const char* str) {
@@ -296,4 +292,12 @@ void draw_render() {
 
 void draw_init(){
     ds_init();
+}
+
+void draw_clear_saved(void)
+{
+    lines->count = 0;
+    curve->count = 0;
+    circles->count = 0;
+    point_count = 0;
 }

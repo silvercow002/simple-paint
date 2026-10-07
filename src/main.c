@@ -4,6 +4,9 @@
 
 #include"menu.h"
 #include"draw.h"
+#include"canvas_io.h"
+
+static int snapshot_ready;
 
 // TODO:
 //  change this parameter to argv
@@ -59,6 +62,9 @@ static void init_func()
 static void display(void) {
     glClear(GL_COLOR_BUFFER_BIT);
 
+    if (snapshot_ready) {
+        canvas_restore(width, height);
+    }
     draw_render();
 
     FPS();
@@ -75,6 +81,27 @@ static void display(void) {
 
     glutSwapBuffers();
     fprintf(stderr, "\n");
+}
+
+static void timer_handler(int value)
+{
+    // no use
+    (void)value;
+
+    // draw the pic again avoid show FPS
+    glDrawBuffer(GL_BACK);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    if (snapshot_ready) {
+        canvas_restore(width, height);
+    }
+    draw_render();
+    canvas_capture(width, height);
+    snapshot_ready = 1;
+    draw_clear_saved();
+    glutPostRedisplay();
+
+    glutTimerFunc(1000, timer_handler, 0);
 }
 
 static void reshape(int nw, int nh) {
@@ -126,10 +153,13 @@ static void mouse_handler(int button, int state, int x, int y) {
 
 
 int main(int argc, char** argv) {
+    // free after quit
+    atexit(canvas_free);
 
     // glut init
     glutInit(&argc, argv);
-    glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH | GLUT_MULTISAMPLE); // performancnce frist
+    // performancnce frist, arg from google, i have no idea what it done
+    glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH | GLUT_MULTISAMPLE);
 
     glutInitWindowSize(width ? width : 400,  height ? height : 400);
     // glutInitWindowPosition(100, 50);
@@ -151,5 +181,6 @@ int main(int argc, char** argv) {
 
 
     last_time = glutGet(GLUT_ELAPSED_TIME);
+    glutTimerFunc(1000, timer_handler, 0);
     glutMainLoop();
 }
