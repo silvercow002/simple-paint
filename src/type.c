@@ -44,7 +44,7 @@ void type_cancel(void) {
 static void apply_color(color_e color) {
     static const GLfloat colors[][3] = {
         {1, 0, 0}, {0, 0, 1}, {0, 1, 0},
-        {1, 1, 0}, {1, 1, 1}, {0, 0, 0}
+        {1, 1, 0}, {0, 0, 0}
     };
     glColor3fv(colors[color]);
 }

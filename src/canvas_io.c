@@ -14,6 +14,7 @@ void canvas_capture(int width, int height) {
 
     free(pixels);
     pixels = next;
+    fprintf(stderr, "buffer saved\n");
     saved_width = width;
     saved_height = height;
 }

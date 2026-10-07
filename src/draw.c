@@ -76,6 +76,12 @@ static Points *points;
 static Lines *lines;
 static Circles *circles;
 static Triangles *misumis;
+static GLUquadric *disk_quadric;
+
+static void free_disk(void) {
+    if (disk_quadric) gluDeleteQuadric(disk_quadric);
+    disk_quadric = NULL;
+}
 
 
 static void ds_init() {
@@ -123,7 +129,7 @@ void draw_string(float x, float y, const char* str) {
 static void apply_color(color_e color) {
     static const GLfloat colors[][3] = {
         {1, 0, 0}, {0, 0, 1}, {0, 1, 0},
-        {1, 1, 0}, {1, 1, 1}, {0, 0, 0}
+        {1, 1, 0}, {0, 0, 0}
     };
     glColor3fv(colors[color]);
 }
@@ -154,13 +160,10 @@ static void draw_points(void) {
             glVertex2f(cx+r, cy+r); glVertex2f(cx-r, cy+r);
             glEnd();
         } else {
-            glBegin(GL_TRIANGLE_FAN);
-            glVertex2f(cx, cy);
-            for (int j = 0; j <= 32; ++j) {
-                float a = j * 6.283185307f / 32;
-                glVertex2f(cx + r*cosf(a), cy + r*sinf(a));
-            }
-            glEnd();
+            glPushMatrix();
+            glTranslatef(cx, cy, 0.0f);
+            gluDisk(disk_quadric, 0.0, r, 32, 1);
+            glPopMatrix();
         }
     }
 }
@@ -186,14 +189,6 @@ static void draw_line() {
 
 static void draw_circle() {
     fprintf(stderr, "draw_circle() was benn clike\n");
-    static GLUquadric *_circle = NULL;
-    
-    if (_circle == NULL) {
-        _circle = gluNewQuadric();
-        gluQuadricDrawStyle(_circle, GLU_FILL);
-    }
-
-
     for (size_t i=0; i < circles->count; ++i) {
         apply_color(circles->meta[i].color);
         glPushMatrix();
@@ -202,7 +197,7 @@ static void draw_circle() {
             height - circles->meta[i].y,
             0.0f
         );
-        gluDisk(_circle,
+        gluDisk(disk_quadric,
             0.0,
             circles->meta[i].radius,
             128,
@@ -340,6 +335,9 @@ void draw_render() {
 }
 
 void draw_init(){
+    disk_quadric = gluNewQuadric();
+    gluQuadricDrawStyle(disk_quadric, GLU_FILL);
+    atexit(free_disk);
     ds_init();
 }
 

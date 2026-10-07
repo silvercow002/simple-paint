@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.21)
 project(CG VERSION 0.1.0 LANGUAGES C)
 
-add_executable(simple src/main.c src/draw.c src/menu.c src/canvas_io.c src/overlay.c src/type.c)
+add_executable(simple src/main.c src/draw.c src/menu.c src/canvas_io.c src/overlay.c src/type.c src/Mrwithe.c)
 set_target_properties(simple PROPERTIES
     C_STANDARD 17 C_STANDARD_REQUIRED YES C_EXTENSIONS NO)
 target_include_directories(simple PRIVATE include)

@@ -21,7 +21,6 @@ typedef enum{
     blue,
     green,
     yellow,
-    white,
     black,
 } color_e;
 extern color_e pnt_color;

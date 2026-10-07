@@ -5,6 +5,7 @@
 #include"menu.h"
 #include"draw.h"
 #include"type.h"
+#include"Mrwithe.h"
 #include"canvas_io.h"
 #include"overlay.h"
 
@@ -19,12 +20,13 @@ static int snapshot_ready;
 static int save_bmp_pending;
 
 static void cancel_input(void) {
+    eraser_end();
     draw_cancel_input();
     type_cancel();
 }
 
 static void begin_type(void) {
-    draw_cancel_input();
+    cancel_input();
     type_begin();
 }
 
@@ -64,6 +66,7 @@ static void init_window(void)
 }
 
 static void display(void) {
+    eraser_capture();
     glClear(GL_COLOR_BUFFER_BIT);
 
     if (snapshot_ready) {
@@ -104,6 +107,7 @@ static void display(void) {
     }
 
     type_preview(height);
+    eraser_preview(height);
     overlay_render(width, height);
 
     glutSwapBuffers();
@@ -114,6 +118,7 @@ static void timer_handler(int value)
 {
     // no use
     (void)value;
+    eraser_capture();
 
     // draw the pic again avoid show FPS
     glClear(GL_COLOR_BUFFER_BIT);
@@ -150,6 +155,7 @@ static void keybord_handler(unsigned char key, int x, int y) {
     (void)x;
     (void)y;
     
+    if (eraser_keyboard(key)) return;
     if (type_keyboard(key)) return;
 
     switch (key) {
@@ -173,14 +179,8 @@ static void keybord_handler(unsigned char key, int x, int y) {
     }
 }
 
-static void motion_handler(int x, int y) {
-    if (draw_motion(x, y)) {
-        return;
-    }
-}
-
-
 static void mouse_handler(int button, int state, int x, int y) {
+    if (eraser_mouse(button, state, x, y)) return;
     if (type_mouse(button, state, x, y)) {
         return;
     }
@@ -215,9 +215,10 @@ int main(int argc, char **argv) {
 
     glutCreateWindow("hw1");
 
-    menu_init(cancel_input, request_save_bmp, begin_type);
+    menu_init(cancel_input, request_save_bmp, begin_type, eraser_begin);
     draw_init();
     type_init();
+    eraser_init(&snapshot_ready);
 
     init_window();
 
@@ -225,7 +226,6 @@ int main(int argc, char **argv) {
     glutKeyboardFunc(keybord_handler);
     glutReshapeFunc(reshape);
     glutMouseFunc(mouse_handler);
-    glutMotionFunc(motion_handler);
 
 
     overlay_init();

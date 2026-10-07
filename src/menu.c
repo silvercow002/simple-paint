@@ -7,6 +7,7 @@
 static void (*tool_changed)(void);
 static void (*save_bmp_requested)(void);
 static void (*type_requested)(void);
+static void (*eraser_requested)(void);
 
 Brush_e brush = BRUSH_DOT;
 Shape_e shape = SHAPE_NONE;
@@ -31,7 +32,7 @@ static const MenuOption shape_options[] = {
 };
 static const MenuOption color_options[] = {
     {"Red", red}, {"Blue", blue}, {"Green", green},
-    {"Yellow", yellow}, {"White", white}, {"Black", black}
+    {"Yellow", yellow}, {"Black", black}
 };
 static const MenuOption size_options[] = {
     {"1 px", 1}, {"2 px", 2}, {"4 px", 4},
@@ -75,6 +76,7 @@ static void refresh_selection(void) {
 
 static void parent_callback(int value) {
     if (value == 1 && type_requested) type_requested();
+    if (value == 2 && eraser_requested) eraser_requested();
     if (value == -1) {
         exit(0);
     } 
@@ -149,8 +151,9 @@ static void save_callback(int choice) {
 }
 
 void menu_init(void (*on_tool_changed)(void), void (*on_save_bmp)(void),
-               void (*on_type)(void))
+               void (*on_type)(void), void (*on_eraser)(void))
 {
+    eraser_requested = on_eraser;
     type_requested = on_type;
     tool_changed = on_tool_changed;
     save_bmp_requested = on_save_bmp;
@@ -169,7 +172,6 @@ void menu_init(void (*on_tool_changed)(void), void (*on_save_bmp)(void),
     glutAddMenuEntry("Blue", blue);
     glutAddMenuEntry("Green", green);
     glutAddMenuEntry("Yellow", yellow);
-    glutAddMenuEntry("White", white);
     glutAddMenuEntry("Black", black);
     width_menu = size_menu(line_width_callback);
     point_menu = size_menu(point_size_callback);
@@ -184,6 +186,7 @@ void menu_init(void (*on_tool_changed)(void), void (*on_save_bmp)(void),
     glutAddSubMenu("Line Width", width_menu);
     glutAddSubMenu("Point Size", point_menu);
     glutAddMenuEntry("Type", 1);
+    glutAddMenuEntry("Eraser", 2);
     glutAddSubMenu("Save", save_menu);
     glutAddMenuEntry("Quit", -1);
 
