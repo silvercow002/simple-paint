@@ -14,6 +14,7 @@ jobs:
   build:
     name: Build ${{ matrix.platform }}
     runs-on: ${{ matrix.os }}
+    container: ${{ matrix.container || '' }}
     strategy:
       fail-fast: false
       matrix:
@@ -24,7 +25,17 @@ jobs:
             platform: linux-x64
           - os: macos-14
             platform: macos-arm64
+          - os: ubuntu-24.04
+            platform: fedora-43-x64
+            container: fedora:43
     steps:
+      - name: Install Fedora build dependencies
+        if: matrix.platform == 'fedora-43-x64'
+        shell: bash
+        run: |
+          dnf install -y git gcc cmake ninja-build pkgconf-pkg-config \
+            freeglut-devel mesa-libGL-devel mesa-libGLU-devel tar gzip
+
       - uses: actions/checkout@v6
         with:
           persist-credentials: false
@@ -48,8 +59,8 @@ jobs:
           cmake --preset windows-release
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-      - name: Install Linux dependencies
-        if: runner.os == 'Linux'
+      - name: Install Ubuntu dependencies
+        if: matrix.platform == 'linux-x64'
         run: |
           sudo apt-get update
           sudo apt-get install -y ninja-build pkg-config freeglut3-dev libgl1-mesa-dev libglu1-mesa-dev
@@ -72,6 +83,15 @@ jobs:
         if: runner.os != 'Windows'
         run: cmake --build --preset unix-release --parallel
 
+      - name: Check Fedora shared libraries
+        if: matrix.platform == 'fedora-43-x64'
+        shell: bash
+        run: |
+          ldd build/unix-release/simple | tee dependencies.txt
+          if grep -q 'not found' dependencies.txt; then
+            exit 1
+          fi
+
       - name: Stage Windows files
         if: runner.os == 'Windows'
         run: cmake --install build/windows-release --config Release --prefix dist/package
@@ -88,50 +108,9 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-  build-fedora:
-    name: Build fedora-43-x64
-    runs-on: ubuntu-24.04
-    container: fedora:43
-    defaults:
-      run:
-        shell: bash
-    steps:
-      - name: Install Fedora build dependencies
-        run: |
-          dnf install -y git gcc cmake ninja-build pkgconf-pkg-config \
-            freeglut-devel mesa-libGL-devel mesa-libGLU-devel tar gzip
-
-      - uses: actions/checkout@v6
-        with:
-          persist-credentials: false
-
-      - name: Configure Fedora
-        run: cmake --preset unix-release
-
-      - name: Build Fedora
-        run: cmake --build --preset unix-release --parallel
-
-      - name: Check shared libraries
-        run: |
-          ldd build/unix-release/simple | tee dependencies.txt
-          if grep -q 'not found' dependencies.txt; then
-            exit 1
-          fi
-
-      - name: Stage Fedora files
-        run: cmake --install build/unix-release --config Release --prefix dist/package
-
-      - name: Upload Fedora package
-        uses: actions/upload-artifact@v4
-        with:
-          name: CG-fedora-43-x64
-          path: dist/package/
-          if-no-files-found: error
-          retention-days: 14
-
   release:
     name: Publish tagged release
-    needs: [build, build-fedora]
+    needs: build
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-24.04
     permissions:
