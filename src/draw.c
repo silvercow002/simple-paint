@@ -149,6 +149,15 @@ static void draw_triangles(void)
                        height - misumi->vertices[j].y);
         }
         glEnd();
+        if (misumi->outline) {
+            for (int j = 0; j < 3; ++j) {
+                glPushMatrix();
+                glTranslatef((float)misumi->vertices[j].x,
+                             (float)(height - misumi->vertices[j].y), 0.0f);
+                gluDisk(disk_quadric, 0.0, misumi->width * 0.5f, 32, 1);
+                glPopMatrix();
+            }
+        }
     }
     glPopAttrib();
 }
