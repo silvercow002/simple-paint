@@ -12,7 +12,8 @@ typedef enum {
     SHAPE_NONE,
     SHAPE_LINE,    
     SHAPE_MISUMI,
-    SHAPE_CIRCLE
+    SHAPE_CIRCLE,
+    SHAPE_MISUMI_OUTLINE
 } Shape_e;
 extern Shape_e shape;
 

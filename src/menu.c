@@ -8,6 +8,7 @@ static void (*tool_changed)(void);
 static void (*save_bmp_requested)(void);
 static void (*type_requested)(void);
 static void (*eraser_requested)(void);
+static void (*clear_requested)(void);
 
 Brush_e brush = BRUSH_DOT;
 Shape_e shape = SHAPE_NONE;
@@ -28,7 +29,8 @@ static const MenuOption brush_options[] = {
 };
 static const MenuOption shape_options[] = {
     {"None", SHAPE_NONE}, {"Line", SHAPE_LINE},
-    {"Triangle", SHAPE_MISUMI}, {"Circle", SHAPE_CIRCLE}
+    {"Triangle", SHAPE_MISUMI},
+    {"Triangle Outline", SHAPE_MISUMI_OUTLINE}, {"Circle", SHAPE_CIRCLE}
 };
 static const MenuOption color_options[] = {
     {"Red", red}, {"Blue", blue}, {"Green", green},
@@ -77,6 +79,7 @@ static void refresh_selection(void) {
 static void parent_callback(int value) {
     if (value == 1 && type_requested) type_requested();
     if (value == 2 && eraser_requested) eraser_requested();
+    if (value == 3 && clear_requested) clear_requested();
     if (value == -1) {
         exit(0);
     } 
@@ -113,6 +116,10 @@ static void shape_callback(int choice) {
     case SHAPE_MISUMI:
         shape = SHAPE_MISUMI;
         fprintf(stderr, "shape is set to 'MISUMI'\n");
+        break;
+    case SHAPE_MISUMI_OUTLINE:
+        shape = SHAPE_MISUMI_OUTLINE;
+        fprintf(stderr, "shape is set to 'Triangle Outline'\n");
         break;
     case SHAPE_CIRCLE:
         shape = SHAPE_CIRCLE;
@@ -151,8 +158,10 @@ static void save_callback(int choice) {
 }
 
 void menu_init(void (*on_tool_changed)(void), void (*on_save_bmp)(void),
-               void (*on_type)(void), void (*on_eraser)(void))
+               void (*on_type)(void), void (*on_eraser)(void),
+               void (*on_clear)(void))
 {
+    clear_requested = on_clear;
     eraser_requested = on_eraser;
     type_requested = on_type;
     tool_changed = on_tool_changed;
@@ -165,6 +174,7 @@ void menu_init(void (*on_tool_changed)(void), void (*on_save_bmp)(void),
     glutAddMenuEntry("None", SHAPE_NONE);
     glutAddMenuEntry("Line", SHAPE_LINE);
     glutAddMenuEntry("Triangle", SHAPE_MISUMI);
+    glutAddMenuEntry("Triangle Outline", SHAPE_MISUMI_OUTLINE);
     glutAddMenuEntry("Circle", SHAPE_CIRCLE);
 
     color_menu = glutCreateMenu(color_callback);
@@ -188,6 +198,7 @@ void menu_init(void (*on_tool_changed)(void), void (*on_save_bmp)(void),
     glutAddMenuEntry("Type", 1);
     glutAddMenuEntry("Eraser", 2);
     glutAddSubMenu("Save", save_menu);
+    glutAddMenuEntry("Clear Canvas", 3);
     glutAddMenuEntry("Quit", -1);
 
 

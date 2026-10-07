@@ -25,6 +25,17 @@ static void cancel_input(void) {
     type_cancel();
 }
 
+static void clear_canvas(void) {
+    cancel_input();
+    draw_clear_saved();
+    type_clear_saved();
+    canvas_free();
+    snapshot_ready = 0;
+    save_bmp_pending = 0;
+    glutPostRedisplay();
+    fprintf(stderr, "Canvas cleared\n");
+}
+
 static void begin_type(void) {
     cancel_input();
     type_begin();
@@ -215,7 +226,7 @@ int main(int argc, char **argv) {
 
     glutCreateWindow("hw1");
 
-    menu_init(cancel_input, request_save_bmp, begin_type, eraser_begin);
+    menu_init(cancel_input, request_save_bmp, begin_type, eraser_begin, clear_canvas);
     draw_init();
     type_init();
     eraser_init(&snapshot_ready);

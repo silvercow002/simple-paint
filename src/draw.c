@@ -26,6 +26,8 @@ typedef struct {
 typedef struct {
     Vertex vertices[3];
     color_e color;
+    float width;
+    int outline;
 } Triangle;
 
 typedef struct {
@@ -136,16 +138,19 @@ static void apply_color(color_e color) {
 
 static void draw_triangles(void)
 {
-    glBegin(GL_TRIANGLES);
+    glPushAttrib(GL_LINE_BIT);
     for (size_t i = 0; i < misumis->count; ++i) {
         const Triangle *misumi = &misumis->meta[i];
         apply_color(misumi->color);
+        if (misumi->outline) glLineWidth(misumi->width);
+        glBegin(misumi->outline ? GL_LINE_LOOP : GL_TRIANGLES);
         for (int j = 0; j < 3; ++j) {
             glVertex2i(misumi->vertices[j].x,
                        height - misumi->vertices[j].y);
         }
+        glEnd();
     }
-    glEnd();
+    glPopAttrib();
 }
 
 static void draw_points(void) {
@@ -257,6 +262,7 @@ int draw_mouse(int button, int state, int x, int y) {
         break;
 
     case SHAPE_MISUMI:
+    case SHAPE_MISUMI_OUTLINE:
         freehand = 0;
         if (misumis->count >= misumis->capacity) {
             fprintf(stderr, "misumis reached capacity\n");
@@ -267,7 +273,7 @@ int draw_mouse(int button, int state, int x, int y) {
         if (misumi_vertex_count == 3) {
             misumis->meta[misumis->count++] = (Triangle){
                 {misumi_vertices[0], misumi_vertices[1], misumi_vertices[2]},
-                pnt_color
+                pnt_color, line_width, shape == SHAPE_MISUMI_OUTLINE
             };
             misumi_vertex_count = 0;
             glutPostRedisplay();
