@@ -13,8 +13,29 @@ typedef struct {
     Brush_e brush;
 } Point;
 
-static Point *points;
-static size_t point_count, point_capacity;
+typedef struct {
+    size_t count;
+    size_t capacity;
+    Point meta[];
+} Points;
+
+typedef struct {
+    int x, y;
+} Vertex;
+
+typedef struct {
+    Vertex vertices[3];
+    color_e color;
+} Triangle;
+
+typedef struct {
+    size_t count;
+    size_t capacity;
+    Triangle meta[];
+} Triangles;
+static Vertex misumi_vertices[3];
+static int misumi_vertex_count;
+
 
 
 typedef struct {
@@ -51,8 +72,10 @@ static int pos_x, pos_y;
 static int last_x, last_y;
 
 // store
+static Points *points;
 static Lines *lines;
 static Circles *circles;
+static Triangles *misumis;
 
 
 static void ds_init() {
@@ -74,8 +97,19 @@ static void ds_init() {
     lines->count = 0;
     lines->capacity = _size;
 
-    point_capacity = _size;
-    points = malloc(point_capacity * sizeof *points);
+    misumis = malloc(
+        sizeof *misumis +
+        _size * sizeof misumis->meta[0]
+    );
+    misumis->count = 0;
+    misumis->capacity = _size;
+
+    points = malloc(
+        sizeof *points +
+        _size * sizeof points->meta[0]
+    );
+    points->count = 0;
+    points->capacity = _size;
 }
 
 void draw_string(float x, float y, const char* str) {
@@ -83,11 +117,6 @@ void draw_string(float x, float y, const char* str) {
     for (const char* i = str; *i != '\0'; i++) {
         glutBitmapCharacter(GLUT_BITMAP_HELVETICA_12, *i);
     }
-    
-}
-
-void draw_polygon() {
-    int i;
     
 }
 
@@ -99,9 +128,23 @@ static void apply_color(color_e color) {
     glColor3fv(colors[color]);
 }
 
+static void draw_triangles(void)
+{
+    glBegin(GL_TRIANGLES);
+    for (size_t i = 0; i < misumis->count; ++i) {
+        const Triangle *misumi = &misumis->meta[i];
+        apply_color(misumi->color);
+        for (int j = 0; j < 3; ++j) {
+            glVertex2i(misumi->vertices[j].x,
+                       height - misumi->vertices[j].y);
+        }
+    }
+    glEnd();
+}
+
 static void draw_points(void) {
-    for (size_t i = 0; i < point_count; ++i) {
-        const Point *p = &points[i];
+    for (size_t i = 0; i < points->count; ++i) {
+        const Point *p = &points->meta[i];
         apply_color(p->color);
         float r = p->size * 0.5f;
         float cx = (float)p->x, cy = (float)(height - p->y);
@@ -123,6 +166,7 @@ static void draw_points(void) {
 }
 
 void draw_cancel_input(void) {
+    misumi_vertex_count = 0;
     freehand = 0;
     pending = 0;
 }
@@ -183,11 +227,11 @@ int draw_mouse(int button, int state, int x, int y) {
     switch (shape) {
     case SHAPE_NONE:
         if (brush == BRUSH_DOT || brush == BRUSH_SQUARE) {
-            if (point_count >= point_capacity) {
+            if (points->count >= points->capacity) {
                 fprintf(stderr, "points reached capacity\n");
                 break;
             }
-            points[point_count++] = (Point){x, y, pnt_size, pnt_color, brush};
+            points->meta[points->count++] = (Point){x, y, pnt_size, pnt_color, brush};
             glutPostRedisplay();
             pending = 0;
             freehand = 1;
@@ -218,6 +262,21 @@ int draw_mouse(int button, int state, int x, int y) {
         break;
 
     case SHAPE_MISUMI:
+        freehand = 0;
+        if (misumis->count >= misumis->capacity) {
+            fprintf(stderr, "misumis reached capacity\n");
+            break;
+        }
+        misumi_vertices[misumi_vertex_count++] = (Vertex){x, y};
+        fprintf(stderr, "Triangle vertex: %d/3\n", misumi_vertex_count);
+        if (misumi_vertex_count == 3) {
+            misumis->meta[misumis->count++] = (Triangle){
+                {misumi_vertices[0], misumi_vertices[1], misumi_vertices[2]},
+                pnt_color
+            };
+            misumi_vertex_count = 0;
+            glutPostRedisplay();
+        }
         break;
     case SHAPE_CIRCLE:
         if (circles->count >= circles->capacity) {
@@ -255,7 +314,7 @@ int draw_motion(int x, int y) {
     int steps = (int)ceilf(distance / spacing);
 
     for (int i = 1; i <= steps; ++i) {
-        if (point_count >= point_capacity) {
+        if (points->count >= points->capacity) {
             freehand = 0;
             fprintf(stderr, "points reached capacity\n");
             glutPostRedisplay();
@@ -264,7 +323,7 @@ int draw_motion(int x, int y) {
         float t = (float)i / steps;
         int px = (int)lroundf(last_x + dx * t);
         int py = (int)lroundf(last_y + dy * t);
-        points[point_count++] = (Point){px, py, pnt_size, pnt_color, brush};
+        points->meta[points->count++] = (Point){px, py, pnt_size, pnt_color, brush};
     }
     last_x = x;
     last_y = y;
@@ -276,6 +335,7 @@ int draw_motion(int x, int y) {
 void draw_render() {
     draw_line();
     draw_circle();
+    draw_triangles();
     draw_points();
 }
 
@@ -285,7 +345,8 @@ void draw_init(){
 
 void draw_clear_saved(void)
 {
+    misumis->count = 0;
     lines->count = 0;
     circles->count = 0;
-    point_count = 0;
+    points->count = 0;
 }
