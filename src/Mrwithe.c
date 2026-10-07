@@ -5,6 +5,8 @@
 
 #include "Mrwithe.h"
 #include "draw.h"
+#include "type.h"
+#include "canvas_io.h"
 
 typedef struct {
     int x, y;
