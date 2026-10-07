@@ -21,8 +21,6 @@ static void request_save_bmp(void) {
     glutPostRedisplay();
 }
 
-// TODO:
-//  change this parameter to argv
 int width, height;
 int cur_time, last_time, fps_counter;
 float fps;
@@ -196,6 +194,17 @@ static void mouse_handler(int button, int state, int x, int y) {
 
 
 int main(int argc, char** argv) {
+    width = 800;
+    height = 800;
+    if (argc >= 3) {
+        width = atoi(argv[1]);
+        height = atoi(argv[2]);
+    }
+
+    // hide
+    argc = 1;
+    argv[1] = NULL;
+
     // free after quit
     atexit(canvas_free);
 
@@ -204,7 +213,7 @@ int main(int argc, char** argv) {
     // performancnce frist, arg from google, i have no idea what it done
     glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH | GLUT_MULTISAMPLE);
 
-    glutInitWindowSize(width ? width : 400,  height ? height : 400);
+    glutInitWindowSize(width, height);
     // glutInitWindowPosition(100, 50);
 
 
