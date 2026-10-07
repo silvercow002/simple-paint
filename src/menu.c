@@ -5,6 +5,7 @@
 #include"menu.h"
 #include"pen.h"
 static void (*tool_changed)(void);
+static void (*save_bmp_requested)(void);
 
 Brush_e brush = BRUSH_DOT;
 Shape_e shape = SHAPE_NONE;
@@ -57,15 +58,15 @@ static void refresh_group(int menu, int parent_entry, const char *title,
 
 static void refresh_selection(void) {
     int previous_menu = glutGetMenu();
-    refresh_group(color_menu, 1, "Color", color_options,
+    refresh_group(color_menu, 3, "Color", color_options,
                   OPTION_COUNT(color_options), pnt_color);
-    refresh_group(width_menu, 2, "Line Width", size_options,
+    refresh_group(width_menu, 4, "Line Width", size_options,
                   OPTION_COUNT(size_options), (int)line_width);
-    refresh_group(point_menu, 3, "Point Size", size_options,
+    refresh_group(point_menu, 5, "Point Size", size_options,
                   OPTION_COUNT(size_options), (int)pnt_size);
-    refresh_group(brush_menu, 4, "Brush", brush_options,
+    refresh_group(brush_menu, 1, "Brush", brush_options,
                   OPTION_COUNT(brush_options), brush);
-    refresh_group(shape_menu, 5, "Shape", shape_options,
+    refresh_group(shape_menu, 2, "Shape", shape_options,
                   OPTION_COUNT(shape_options), shape);
     glutSetMenu(previous_menu);
 }
@@ -141,9 +142,14 @@ static int size_menu(void (*callback)(int)) {
     return menu;
 }
 
-void menu_init(void (*on_tool_changed)(void))
+static void save_callback(int choice) {
+    if (choice == 1 && save_bmp_requested) save_bmp_requested();
+}
+
+void menu_init(void (*on_tool_changed)(void), void (*on_save_bmp)(void))
 {
     tool_changed = on_tool_changed;
+    save_bmp_requested = on_save_bmp;
     brush_menu = glutCreateMenu(brush_callback);
     glutAddMenuEntry("Dot", BRUSH_DOT);
     glutAddMenuEntry("Square", BRUSH_SQUARE);
@@ -164,12 +170,16 @@ void menu_init(void (*on_tool_changed)(void))
     width_menu = size_menu(line_width_callback);
     point_menu = size_menu(point_size_callback);
 
+    int save_menu = glutCreateMenu(save_callback);
+    glutAddMenuEntry("BMP", 1);
+
     main_menu = glutCreateMenu(parent_callback);
     glutAddSubMenu("Brush", brush_menu);
     glutAddSubMenu("Shape", shape_menu);
     glutAddSubMenu("Color", color_menu);
     glutAddSubMenu("Line Width", width_menu);
     glutAddSubMenu("Point Size", point_menu);
+    glutAddSubMenu("Save", save_menu);
     glutAddMenuEntry("Quit", -1);
 
 

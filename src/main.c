@@ -6,7 +6,20 @@
 #include"draw.h"
 #include"canvas_io.h"
 
+#include<time.h>
+#ifdef _WIN32
+#include <direct.h>
+#else
+#include <unistd.h>
+#endif
+
 static int snapshot_ready;
+static int save_bmp_pending;
+
+static void request_save_bmp(void) {
+    save_bmp_pending = 1;
+    glutPostRedisplay();
+}
 
 // TODO:
 //  change this parameter to argv
@@ -66,6 +79,36 @@ static void display(void) {
         canvas_restore(width, height);
     }
     draw_render();
+
+    if (save_bmp_pending) {
+        char filename[96];
+        static unsigned int save_number;
+        snprintf(filename, sizeof filename, "canvas-%lld-%u.bmp",
+                 (long long)time(NULL), ++save_number);
+        canvas_capture(width, height);
+        snapshot_ready = 1;
+        draw_clear_saved();
+        if (canvas_save_bmp(filename)) {
+            char directory[4096];
+
+        // complier in windows 
+#ifdef _WIN32
+            char *location = _getcwd(directory, sizeof directory);
+            const char *separator = "\\";
+#else
+        // linxu
+            char *location = getcwd(directory, sizeof directory);
+            const char *separator = "/";
+#endif
+            if (location)
+                fprintf(stderr, "saved BMP: %s%s%s\n", directory, separator, filename);
+            else
+                fprintf(stderr, "saved BMP: %s (could not resolve working directory)\n", filename);
+        } else {
+            fprintf(stderr, "couldnt save BMP: %s\n", filename);
+        }
+        save_bmp_pending = 0;
+    }
 
     FPS();
     char fps_str[32];
@@ -167,7 +210,7 @@ int main(int argc, char** argv) {
 
     glutCreateWindow("hw1");
 
-    menu_init(draw_cancel_input);
+    menu_init(draw_cancel_input, request_save_bmp);
     draw_init();
 
     init_window();
