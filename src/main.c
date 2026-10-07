@@ -147,6 +147,9 @@ static void reshape(int nw, int nh) {
 
 
 static void keybord_handler(unsigned char key, int x, int y) {
+    (void)x;
+    (void)y;
+    
     if (type_keyboard(key)) return;
 
     switch (key) {
