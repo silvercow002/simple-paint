@@ -52,7 +52,6 @@ static int last_x, last_y;
 
 // store
 static Lines *lines;
-static Lines *curve;
 static Circles *circles;
 
 
@@ -75,12 +74,6 @@ static void ds_init() {
     lines->count = 0;
     lines->capacity = _size;
 
-    curve = malloc(
-        sizeof *curve +
-        _size * sizeof curve->meta[0]
-    );
-    curve->count = 0;
-    curve->capacity = _size;
     point_capacity = _size;
     points = malloc(point_capacity * sizeof *points);
 }
@@ -147,19 +140,6 @@ static void draw_line() {
     }
 }
 
-static void draw_curve() {
-    for (size_t i=0; i < curve->count; ++i) {
-        Line *tmp = &curve->meta[i];
-        apply_color(tmp->color);
-        glLineWidth(tmp->width);
-
-        glBegin(GL_LINES);
-        glVertex2i(tmp->x1, height-tmp->y1);
-        glVertex2i(tmp->x2, height-tmp->y2);
-        glEnd();
-    }
-}
-
 static void draw_circle() {
     fprintf(stderr, "draw_circle() was benn clike\n");
     static GLUquadric *_circle = NULL;
@@ -195,6 +175,7 @@ int draw_mouse(int button, int state, int x, int y) {
     }
 
     if (state == GLUT_UP) {
+        if (freehand) draw_motion(x, y);
         freehand = 0;
         return 1;
     }
@@ -265,16 +246,26 @@ int draw_motion(int x, int y) {
         return 1;
     }
 
-    if (curve->count >= curve->capacity) {
-        freehand = 0;
-        fprintf(stderr, "curve instance is reach the limits\n");
-        return 0;
-    }
+    float dx = (float)x - last_x;
+    float dy = (float)y - last_y;
+    float distance = sqrtf(dx * dx + dy * dy);
 
-    curve->meta[curve->count] = (Line){
-        last_x, last_y, x, y, line_width, pnt_color
-    };
-    curve->count++; 
+    // interpolation
+    float spacing = fmaxf(1.0f, pnt_size * 0.25f);
+    int steps = (int)ceilf(distance / spacing);
+
+    for (int i = 1; i <= steps; ++i) {
+        if (point_count >= point_capacity) {
+            freehand = 0;
+            fprintf(stderr, "points reached capacity\n");
+            glutPostRedisplay();
+            return 0;
+        }
+        float t = (float)i / steps;
+        int px = (int)lroundf(last_x + dx * t);
+        int py = (int)lroundf(last_y + dy * t);
+        points[point_count++] = (Point){px, py, pnt_size, pnt_color, brush};
+    }
     last_x = x;
     last_y = y;
 
@@ -285,7 +276,6 @@ int draw_motion(int x, int y) {
 void draw_render() {
     draw_line();
     draw_circle();
-    draw_curve();
     draw_points();
 }
 
@@ -296,7 +286,6 @@ void draw_init(){
 void draw_clear_saved(void)
 {
     lines->count = 0;
-    curve->count = 0;
     circles->count = 0;
     point_count = 0;
 }
