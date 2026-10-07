@@ -6,6 +6,7 @@
 #include"pen.h"
 static void (*tool_changed)(void);
 static void (*save_bmp_requested)(void);
+static void (*type_requested)(void);
 
 Brush_e brush = BRUSH_DOT;
 Shape_e shape = SHAPE_NONE;
@@ -73,6 +74,7 @@ static void refresh_selection(void) {
 
 
 static void parent_callback(int value) {
+    if (value == 1 && type_requested) type_requested();
     if (value == -1) {
         exit(0);
     } 
@@ -146,8 +148,10 @@ static void save_callback(int choice) {
     if (choice == 1 && save_bmp_requested) save_bmp_requested();
 }
 
-void menu_init(void (*on_tool_changed)(void), void (*on_save_bmp)(void))
+void menu_init(void (*on_tool_changed)(void), void (*on_save_bmp)(void),
+               void (*on_type)(void))
 {
+    type_requested = on_type;
     tool_changed = on_tool_changed;
     save_bmp_requested = on_save_bmp;
     brush_menu = glutCreateMenu(brush_callback);
@@ -179,6 +183,7 @@ void menu_init(void (*on_tool_changed)(void), void (*on_save_bmp)(void))
     glutAddSubMenu("Color", color_menu);
     glutAddSubMenu("Line Width", width_menu);
     glutAddSubMenu("Point Size", point_menu);
+    glutAddMenuEntry("Type", 1);
     glutAddSubMenu("Save", save_menu);
     glutAddMenuEntry("Quit", -1);
 

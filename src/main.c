@@ -4,6 +4,7 @@
 
 #include"menu.h"
 #include"draw.h"
+#include"type.h"
 #include"canvas_io.h"
 #include"overlay.h"
 
@@ -17,7 +18,18 @@
 static int snapshot_ready;
 static int save_bmp_pending;
 
+static void cancel_input(void) {
+    draw_cancel_input();
+    type_cancel();
+}
+
+static void begin_type(void) {
+    draw_cancel_input();
+    type_begin();
+}
+
 static void request_save_bmp(void) {
+    type_commit();
     save_bmp_pending = 1;
     glutPostRedisplay();
 }
@@ -58,6 +70,7 @@ static void display(void) {
         canvas_restore(width, height);
     }
     draw_render();
+    type_render(height);
 
     if (save_bmp_pending) {
         char filename[96];
@@ -67,6 +80,7 @@ static void display(void) {
         canvas_capture(width, height);
         snapshot_ready = 1;
         draw_clear_saved();
+        type_clear_saved();
         if (canvas_save_bmp(filename)) {
             char directory[4096];
 
@@ -89,6 +103,7 @@ static void display(void) {
         save_bmp_pending = 0;
     }
 
+    type_preview(height);
     overlay_render(width, height);
 
     glutSwapBuffers();
@@ -107,9 +122,11 @@ static void timer_handler(int value)
         canvas_restore(width, height);
     }
     draw_render();
+    type_render(height);
     canvas_capture(width, height);
     snapshot_ready = 1;
     draw_clear_saved();
+    type_clear_saved();
     glutPostRedisplay();
 
     glutTimerFunc(1000, timer_handler, 0);
@@ -130,6 +147,7 @@ static void reshape(int nw, int nh) {
 
 
 static void keybord_handler(unsigned char key, int x, int y) {
+    if (type_keyboard(key)) return;
 
     switch (key) {
     case 'V':
@@ -156,19 +174,19 @@ static void motion_handler(int x, int y) {
     if (draw_motion(x, y)) {
         return;
     }
-    
 }
 
 
 static void mouse_handler(int button, int state, int x, int y) {
+    if (type_mouse(button, state, x, y)) {
+        return;
+    }
     if (draw_mouse(button, state, x, y)) {
         return;
     }
-
 }
 
-
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
     width = 400;
     height = 400;
     if (argc >= 3) {
@@ -194,8 +212,9 @@ int main(int argc, char** argv) {
 
     glutCreateWindow("hw1");
 
-    menu_init(draw_cancel_input, request_save_bmp);
+    menu_init(cancel_input, request_save_bmp, begin_type);
     draw_init();
+    type_init();
 
     init_window();
 
